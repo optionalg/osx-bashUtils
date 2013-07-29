@@ -1,0 +1,117 @@
+#!/bin/bash
+
+
+#
+# cleanup - Deletes predefined kinds of files and/or folders.
+#
+
+function usage { echo "usage: `basename $0` [-rv] -k kind [dir ...]"; }
+
+
+
+
+OPTIND=1
+
+verboseFlag=
+recursiveFlag=
+expr=()
+
+
+# Loop through the flags.
+while getopts ':hvrk:' flag; do
+  case "$flag" in
+    h) #< Help flag.
+      usage
+      exit 1
+      ;;
+    v) #< Verbose flag.
+      verboseFlag=1
+      ;;
+    r) #< Recursive flag.
+      recursiveFlag=1
+      ;;
+    k) #< Kind flag.
+      # Make sure that we properly concatenate the multiple expressions.
+      if [ ! -z "$expr" ]; then
+        expr+=( -or )
+      fi
+      
+      # Add an expression according to what has to be cleaned up.
+      case "$OPTARG" in
+        os)
+          expr+=(\( -type f -name '.DS_Store' -or -name '.FBCIndex' \))
+          expr+=( -or )
+          expr+=(\( -type d -name '__MACOSX' \))
+          ;;
+        ext)
+          expr+=(\( -type f -name '._*' \))
+          expr+=( -or )
+          expr+=(\( -type d -name '.Trashes' -or -name '.Spotlight-V100' -or -name '.fseventsd' \))
+          ;;
+        py)
+          expr+=(\( -type f -name '*.pyc' -or -name '*.pyo' \))
+          expr+=( -or )
+          expr+=(\( -type d -name '__pycache__' \))
+          ;;
+        hg)
+          expr+=(\( -type d -name '.hg' \))
+          ;;
+        git)
+          expr+=(\( -type d -name '.git' \))
+          ;;
+        svn)
+          expr+=(\( -type d -name '.svn' \))
+          ;;
+        esac
+      ;;
+    \?)
+      echo "Invalid flag: -$OPTARG"
+      exit 1
+      ;;
+    :)
+      echo "Flag -$OPTARG requires an argument."
+      exit 1
+      ;;
+  esac
+done
+
+
+# Group the expressions within a pair of brackets.
+if [ ! -z "$expr" ]; then
+  expr=(\( "${expr[@]}" \))
+else
+  echo "Please specify at least one '-k' flag to define what kind of files to clean up."
+  exit 1
+fi
+
+# Process only the current level.
+if [ -z "$recursiveFlag" ]; then
+  expr+=( -maxdepth 1)
+fi
+
+
+# Deal with the remaining arguments which define the path(s) to run the process from.
+shift $((OPTIND-1))
+[ "$1" == '--' ] && shift
+
+for arg in "$@"; do
+  if [[ $arg == -* ]]; then
+    echo "Cannot set flag arguments after optional parameters."
+    exit 1
+  fi
+done
+
+
+if [ "$#" == '0' ]; then
+  paths='.'
+else
+  paths="$@"
+fi
+
+if [ -z "$verboseFlag" ]; then
+  find $paths ${expr[@]} -exec rm -rf '{}' \;
+else
+  find $paths ${expr[@]} -exec rm -rfv '{}' \;
+fi
+
+exit 0

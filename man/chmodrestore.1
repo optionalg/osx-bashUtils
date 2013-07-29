@@ -1,0 +1,59 @@
+.Dd July 24, 2013
+.Dt CHMODRESTORE 1
+.Os
+.Sh NAME
+.Nm chmodrestore
+.Nd restores the default chmod values for files and/or folders.
+.Sh SYNOPSIS
+.Nm
+.Op Fl v
+.Op path ...
+.Nm
+.Fl r d | f
+.Op Fl v
+.Op dir ...
+.Sh DESCRIPTION
+In its first form, the
+.Nm
+utility resets the chmod value for each individual files and folders supplied in the
+.Ar path
+operand.
+.Pp
+In its other form,
+.Nm
+with the
+.Fl r
+option acts recursively on the directories passed into the
+.Ar dir
+operand.
+.Pp
+The following options are available:
+.Bl -tag -width indent
+.It Fl r
+Cause
+.Nm
+to act recursively on the folders supplied in the
+.Ar dir
+operand. In this case, either
+.Fl d
+or
+.Fl f
+must be set, if not both.
+.It Fl d
+Apply recursively on every directories.
+.It Fl f
+Apply recursively on every files.
+.It Fl v
+Cause
+.Nm
+to be verbose, showing which files are being modified.
+.El
+.Pp
+The value of the chmod set is deduced from the umask value:
+.Bd -literal -offset indent
+(666 - `umask`) for files.
+(777 - `umask`) for directories.
+.Ed
+.Sh AUTHORS
+.An Christopher Crouzet
+.Aq christopher.crouzet _at_ gmail.com

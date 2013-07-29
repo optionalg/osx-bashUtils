@@ -1,0 +1,121 @@
+#!/bin/bash
+
+
+#
+# chmodrestore - Restores the default chmod values for files and/or folders.
+#
+
+function usage {
+  cat << EOF
+usage: `basename $0` [-v] [path ...]
+       `basename $0` -r -d | -f [-v] [dir ...]
+EOF
+}
+
+
+
+
+OPTIND=1
+
+verboseFlag=
+recursiveFlag=
+filesFlag=
+directoriesFlag=
+
+
+# Loop through the flags.
+while getopts ':hvrfd' flag; do
+  case "$flag" in
+    h) #< Help flag.
+      usage
+      exit 1
+      ;;
+    v) #< Verbose flag.
+      verboseFlag=1
+      ;;
+    r) #< Recursive flag.
+      recursiveFlag=1
+      ;;
+    f) #< File flag.
+      filesFlag=1
+      ;;
+    d) #< Directory flag.
+      directoriesFlag=1
+      ;;
+    \?)
+      echo "Invalid flag: -$OPTARG"
+      exit 1
+      ;;
+  esac
+done
+
+
+# Deal with the remaining arguments which define the path(s) to run the process from.
+shift $((OPTIND-1))
+[ "$1" == '--' ] && shift
+
+for arg in "$@"; do
+  if [[ $arg == -* ]]; then
+    echo "Cannot set flag arguments after optional parameters."
+    exit 1
+  fi
+done
+
+
+# Separate the files and the directories from the paths.
+files=
+directories=
+for path in "$@"; do
+  if [ -f "$path" ]; then
+    files+=" $path"
+  elif [ -d "$path" ]; then
+    directories+=" $path"
+  fi
+done
+
+if [ -z "$files" ] && [ -z "$directories" ]; then
+  directories='.'
+fi
+
+
+filesChmodExpr=($(( 666 - 10#`umask` )))
+directoriesChmodExpr=($(( 777 - 10#`umask` )))
+if [ ! -z "$verboseFlag" ]; then
+  filesChmodExpr=( -v ${filesChmodExpr[@]} )
+  directoriesChmodExpr=( -v ${directoriesChmodExpr[@]} )
+fi
+
+if [ -z "$recursiveFlag" ]; then
+  if [ ! -z "$files" ]; then
+    chmod ${filesChmodExpr[@]} $files
+  fi
+  
+  if [ ! -z "$directories" ]; then
+    chmod ${directoriesChmodExpr[@]} $directories
+  fi
+else
+  if [ ! -z "$files" ]; then
+    echo "Only directories can be passed when the flag '-r' is set."
+    exit 1
+  fi
+  
+  if [ -z "$filesFlag" ] && [ -z "$directoriesFlag" ]; then
+    echo "Please specify the '-d' and/or the '-f' flags to determine if directories and/or files are to be recursively targetted."
+    exit 1
+  fi
+  
+  filesExpr=(\( -type f -exec chmod ${filesChmodExpr[@]} {} \; \))
+  directoriesExpr=(\( -type d -exec chmod ${directoriesChmodExpr[@]} {} \; \))
+  
+  if [ ! -z "$filesFlag" ] && [ ! -z "$directoriesFlag" ]; then
+    expr=(\( ${filesExpr[@]} -or ${directoriesExpr[@]} \))
+  elif [ ! -z "$filesFlag" ]; then
+    expr=(${filesExpr[@]})
+  elif [ ! -z "$directoriesFlag" ]; then
+    expr=(${directoriesExpr[@]})
+  fi
+  
+  find $directories ${expr[@]}
+fi
+
+exit 0

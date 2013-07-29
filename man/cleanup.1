@@ -1,0 +1,50 @@
+.Dd July 24, 2013
+.Dt CLEANUP 1
+.Os
+.Sh NAME
+.Nm cleanup
+.Nd deletes predefined kinds of files and/or folders.
+.Sh SYNOPSIS
+.Nm
+.Op Fl rv
+.Fl k Ar kind
+.Op dir ...
+.Sh DESCRIPTION
+The
+.Nm
+utility is going to delete different kinds of files from the 
+.Ar dir
+operand.
+.Pp
+The following options are available:
+.Bl -tag -width indent
+.It Fl r
+Cause
+.Nm
+to act recursively on the folders supplied in the
+.Ar dir
+operand.
+.It Fl v
+Cause
+.Nm
+to be verbose, showing which files are being deleted.
+.It Fl k
+Kind of files do delete. The following values are applicable:
+.Bl -tag -width indent
+.It os
+OS X specific files, such as 'DS.Store', '.FBCIndex', and '__MACOSX'.
+.It ext
+OS X specific files created onto external volumes, such as '._*', '.Trashes', '.Spotlight-V100', and '.fseventsd'.
+.It py
+Python related files, such as '*.pyc', '*.pyo', and '__pycache__'.
+.It hg
+Mercurial related files, such as '.hg'.
+.It git
+Git related files, such as '.git'.
+.It svn
+SVN related files, such as '.svn'.
+.El
+.El
+.Sh AUTHORS
+.An Christopher Crouzet
+.Aq christopher.crouzet _at_ gmail.com
